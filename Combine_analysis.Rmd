@@ -1,0 +1,102 @@
+---
+title: "Combine_analysis"
+author: "Connor McIntee"
+date: "12/22/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+library(rpart)
+library(dplyr)
+data1=read.csv('~/PycharmProjects/NFL_predictor/data.csv')
+data1
+data=as.data.frame(data1)
+data
+data2.2=filter(data, !is.na(Pick))
+data2=filter(data2.2, !is.na(Acceleration))
+data3=filter(data2, Pos == "RB")
+#data3=data2
+data3$School=as.factor(data3$School)
+data3$Pos=as.factor(data3$Pos)
+data3$Team=as.factor(data3$Team)
+data3
+```
+
+
+```{r}
+library(gbm);
+boosted_tree=gbm(Strength~ .,data=data3[,c(9,10,11,12,13,14,23)], var.monotone= rep(0,6), distribution="gaussian", n.trees=1000, shrinkage=0.02, interaction.depth=3, bag.fraction = .5, train.fraction = 1, n.minobsinnode = 3, cv.folds = 10, keep.data=TRUE, verbose=FALSE)
+num_trees=gbm.perf(boosted_tree, method='cv')
+num_trees
+cvrsqr=1-boosted_tree$cv.error[num_trees]/var(data3$Strength)
+cvrsqr
+```
+```{r}
+summary(boosted_tree,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=1,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=2,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=3,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var = c(2,3) ,n.trees=num_trees)
+```
+
+
+```{r}
+library(rpart)
+control=rpart.control(minbucket=4,cp=0.001, maxsurrogate=0, usesurrogate = 0, xval=10)
+tree <- rpart(Agility~ .,data=data3[,c(9,10,11,12,13,14,19)], method = "anova", control = control)
+plotcp(tree)
+#printcp(tree)
+ptree <- prune(tree, cp=0.015)
+ptree$cptable[nrow(ptree2$cptable),c(3,4)]*min(table(data3$Agility)/nrow(data3))
+ptree$variable.importance
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(readxl)
+library(rpart)
+library(dplyr)
+d=read.csv('~/PycharmProjects/NFL_predictor/receiving_data.csv')
+d
+d1=as.data.frame(d)
+d2=filter(d1, !is.na(Rating))
+d2$School=as.factor(d2$School)
+d2$Conf=as.factor(d2$Conf)
+d2=filter(d2, Pos=="WR")
+d2
+```
+```{r}
+library(gbm);
+pred=c(3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,38,39,40,41,42,43,44,45)
+boosted_tree=gbm(Rating~ .,data=d2[,pred], var.monotone= rep(0,(length(pred)-1)), distribution="gaussian", n.trees=1000, shrinkage=0.02, interaction.depth=3, bag.fraction = .5, train.fraction = 1, n.minobsinnode = 3, cv.folds = 10, keep.data=TRUE, verbose=FALSE)
+num_trees=gbm.perf(boosted_tree, method='cv')
+num_trees
+cvrsqr=1-boosted_tree$cv.error[num_trees]/var(d2$Rating)
+cvrsqr
+```
+```{r}
+summary(boosted_tree,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=1,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=2,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=3,n.trees=num_trees)
+plot.gbm(boosted_tree, i.var=4,n.trees=num_trees)
+
+```
